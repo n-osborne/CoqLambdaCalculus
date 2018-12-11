@@ -48,6 +48,12 @@ Module Untyped.
 
   Notation "s1 ++ s2" := (union s1 s2).
   
+  Fixpoint invarset (el: lvar) (s: varset) : bool :=
+    match s with
+    | nil => false
+    | h::t => if lvar_beq el h then true else invarset el t
+    end.
+
   Fixpoint removevar (el: lvar) (s: varset) : varset :=
     match s with
     | nil => nil
