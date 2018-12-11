@@ -69,15 +69,8 @@ Module Untyped.
   | abs : lvar -> term -> term
   | app : term -> term -> term.
 
+  (** Some functions about term **)
 
-  (** Inductive Definition of the redex predicate
-      A lambda term is a redex if:
-      - it is the application of a lambda term to an abstraction
-      - one of its part is a redex*)
-  Inductive isRedex : term -> Prop :=
-  | simpleRedex : forall x : lvar, forall t1 t2 : term, isRedex (app (abs x t1) t2)
-  | indRedex : forall t1 t2 : term, (isRedex t1) \/ (isRedex t2) -> isRedex (app t1 t2).
- 
   (** Function to get all the free variables of a lambda expression
       The set of the free variables for
       - a lambda variables: the var
@@ -91,5 +84,17 @@ Module Untyped.
     | (abs x t') => x \ (freevar t')
     end.
 
+
+  (** Inductive Proposition about term **)
+
+
+  (** Inductive Definition of the redex predicate
+      A lambda term is a redex if:
+      - it is the application of a lambda term to an abstraction
+      - one of its part is a redex*)
+  Inductive isRedex : term -> Prop :=
+  | simpleRedex : forall x : lvar, forall t1 t2 : term, isRedex (app (abs x t1) t2)
+  | indRedex : forall t1 t2 : term, (isRedex t1) \/ (isRedex t2) -> isRedex (app t1 t2).
+ 
 
 End Untyped.
