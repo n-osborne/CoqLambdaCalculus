@@ -71,6 +71,14 @@ Module Untyped.
 
   (** Some functions about term **)
 
+  (** Function to get all the variables of a lambda expression*)
+  Fixpoint getvarset (t: term) : varset :=
+      match t with
+      | (var x) => x :: nil
+      | (app t1 t2) => (getvarset t1) ++ (getvarset t2)
+      | (abs x t') => getvarset t'
+      end.
+
   (** Function to get all the free variables of a lambda expression
       The set of the free variables for
       - a lambda variables: the var
