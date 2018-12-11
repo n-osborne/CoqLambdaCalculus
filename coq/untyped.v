@@ -98,6 +98,19 @@ Module Untyped.
     | (abs x t') => x \ (freevar t')
     end.
 
+  (** Predicate to determine whether a term is a redex.
+  * All the work is done when the argument is an application
+  *)
+  Fixpoint isredex (t: term) : bool :=
+    match t with
+    | (var x) => false
+    | (abs x b) => isredex b
+    | (app t1 t2) => match t1 with
+                     | (var x') => isredex t2
+                     | (app t1 t2) => orb (isredex t1) (isredex t2)
+                     | (abs x' b') => orb (invarset x' (freevar b')) (isredex t2)
+                    end
+    end.
 
   (** Inductive Proposition about term **)
 
