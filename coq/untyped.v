@@ -64,19 +64,19 @@ Module Untyped.
       - the abstraction of a variable from a Term
       - the application of a Term to another one.
    *)
-  Inductive Term : Type :=
-  | var : lvar -> Term
-  | abs : lvar -> Term -> Term
-  | app : Term -> Term -> Term.
+  Inductive term : Type :=
+  | var : lvar -> term
+  | abs : lvar -> term -> term
+  | app : term -> term -> term.
 
 
   (** Inductive Definition of the redex predicate
       A lambda term is a redex if:
       - it is the application of a lambda term to an abstraction
       - one of its part is a redex*)
-  Inductive isRedex : Term -> Prop :=
-  | simpleRedex : forall x : lvar, forall t1 t2 : Term, isRedex (app (abs x t1) t2)
-  | indRedex : forall t1 t2 : Term, (isRedex t1) \/ (isRedex t2) -> isRedex (app t1 t2).
+  Inductive isRedex : term -> Prop :=
+  | simpleRedex : forall x : lvar, forall t1 t2 : term, isRedex (app (abs x t1) t2)
+  | indRedex : forall t1 t2 : term, (isRedex t1) \/ (isRedex t2) -> isRedex (app t1 t2).
  
   (** Function to get all the free variables of a lambda expression
       The set of the free variables for
@@ -84,7 +84,7 @@ Module Untyped.
       - a lambda abstractions: the set of free variables of the body minus the singleton of the binder
       - a lambda applications: the union of the sets of free variables of the two parts of the applications
    *)
-  Fixpoint freevar (t : Term) : varset :=
+  Fixpoint freevar (t : term) : varset :=
     match t with
     | (var x) => x :: nil
     | (app t1 t2) => (freevar t1) ++ (freevar t2)
