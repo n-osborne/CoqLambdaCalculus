@@ -137,9 +137,9 @@ Module Untyped.
 
   Example freevar3 : forall x y : lvar, x <> y -> freevar (abs x (var y)) = [y].
   Proof. intros. unfold not in H. simpl. destruct (lvar_beq x y).
-         - admit.
+         -  admit.
          - reflexivity.
-  Qed.
+  Admitted.
   
   (** Predicate to determine whether a term is a redex.
   * All the work is done when the argument is an application
@@ -155,22 +155,7 @@ Module Untyped.
                     end
     end.
 
-  Example isredex1 : forall x: lvar, forall y : lvar, is_true (isredex (app (abs x (var x)) (var y))).
-  Proof.
 
 
-
-
-  (** Inductive Proposition about term **)
-
-
-  (** Inductive Definition of the redex predicate
-      A lambda term is a redex if:
-      - it is the application of a lambda term to an abstraction
-      - one of its part is a redex*)
-  Inductive isRedex : term -> Prop :=
-  | simpleRedex : forall x : lvar, forall t1 t2 : term, isRedex (app (abs x t1) t2)
-  | indRedex : forall t1 t2 : term, (isRedex t1) \/ (isRedex t2) -> isRedex (app t1 t2).
- 
 
 End Untyped.
