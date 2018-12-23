@@ -2,8 +2,8 @@ Module Untyped.
 
 
   (** Type declaration for the variables.  
-  According to the syntax of lambda calculus, we need an infinite
-  set of variables. *)
+      According to the syntax of lambda calculus, we need an infinite
+      set of variables. *)
   Inductive lvar : Type :=
   | lvarO : lvar
   | S : lvar -> lvar.
@@ -20,6 +20,8 @@ Module Untyped.
              end
     end.
 
+  (** Some basic properties on the inductive definition of lvar. 
+      Mainly, equality is decidable. *)
   Lemma eq_SxSy_implies_eq_xy_lvar : forall x y: lvar, S x = S y -> x = y.
   Proof.
     induction x.
@@ -50,11 +52,10 @@ Module Untyped.
       + unfold not; intro H. inversion H. auto.
   Qed.
       
-  (** Type declaration for the sets of variable.
-  Variables are strings, mainly in order to have an infinite
-  set of available variables according to the definition of
-  the syntax of lambda calculus.
-   *)
+  (** *Type declaration for the sets of variable.*
+      Variables are strings, mainly in order to have an infinite
+      set of available variables according to the definition of
+      the syntax of lambda calculus. *)
   Inductive varset : Type := 
   | nil : varset
   | cons : lvar -> varset -> varset.
@@ -94,7 +95,7 @@ Module Untyped.
                         (at level 60, right associativity).
 
   
-  (** Type declaration
+  (** *Type declaration*
       An untyped lambda term is either:
       - a variable from a given Set
       - the abstraction of a variable from a Term
@@ -105,9 +106,9 @@ Module Untyped.
   | abs : lvar -> term -> term
   | app : term -> term -> term.
 
-  (** Some functions about term **)
+  (** *Some functions about terms* *)
 
-  (** Function to get all the variables of a lambda expression*)
+  (** Function to get all the variables of a lambda expression *)
   Fixpoint getvarset (t: term) : varset :=
       match t with
       | (var x) => x :: nil
@@ -119,8 +120,7 @@ Module Untyped.
       The set of the free variables for
       - a lambda variables: the var
       - a lambda abstractions: the set of free variables of the body minus the singleton of the binder
-      - a lambda applications: the union of the sets of free variables of the two parts of the applications
-   *)
+      - a lambda applications: the union of the sets of free variables of the two parts of the applications *)
   Fixpoint freevar (t : term) : varset :=
     match t with
     | (var x) => x :: nil
@@ -142,8 +142,7 @@ Module Untyped.
   Admitted.
   
   (** Predicate to determine whether a term is a redex.
-  * All the work is done when the argument is an application
-  *)
+      All the work is done when the argument is an application *)
   Fixpoint isredex (t: term) : bool :=
     match t with
     | (var x) => false
