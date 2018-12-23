@@ -22,6 +22,8 @@ Module Untyped.
 
   (** Some basic properties on the inductive definition of lvar. 
       Mainly, equality is decidable. *)
+
+
   Lemma eq_SxSy_implies_eq_xy_lvar : forall x y: lvar, S x = S y -> x = y.
   Proof.
     induction x.
@@ -51,7 +53,44 @@ Module Untyped.
       + apply eq_xy_implies_eqSxSy_lvar. apply e.
       + unfold not; intro H. inversion H. auto.
   Qed.
-      
+
+  Lemma lvar_beq_x_x: forall x:lvar, lvar_beq x x = true.
+  Proof.
+    induction x.
+    - reflexivity.
+    - simpl; apply IHx.
+  Qed.
+
+
+  Lemma lvar_beq_if_eq: forall x y: lvar, x = y -> (lvar_beq x y) = true.
+  Proof.
+    intros x y ant; induction x.
+    - destruct y.
+      + reflexivity.
+      + inversion ant.
+    - rewrite ant; apply lvar_beq_x_x.
+  Qed.
+
+  Lemma lvar_eq_if_beq: forall x y: lvar, (lvar_beq x y) = true -> x = y.
+  (* four cases to be considered:
+     1. x = lvar0 and y = lvar0   =>  this case is trivial
+     2. x = lvar0' and y = S y'   =>  this case works by ex falso
+     3. x = S x' and y = lvar0    =>  this case worlks by ex falso
+     4. x = S x' and y = S y'     =>  this case should work by induction
+                                      but care must be given to the order of the inductions !
+*)
+  Proof.
+    induction x; induction y; intro ant; try trivial; try inversion ant.
+    apply eq_xy_implies_eqSxSy_lvar. apply IHx. apply H0.
+  Qed.
+    
+  Lemma lvar_beq_iff_eq: forall x y: lvar, x = y <-> (lvar_beq x y) = true.
+  Proof.
+    split.
+    - apply lvar_beq_if_eq.
+    - apply lvar_eq_if_beq.
+  Qed.
+  
   (** *Type declaration for the sets of variable.*
       Variables are strings, mainly in order to have an infinite
       set of available variables according to the definition of
