@@ -100,15 +100,32 @@ Fixpoint get_var_set (t: term) : var_set :=
 
 (** Function to get all the free variables of a lambda expression
     The set of the free variables for
-    - a lambda variables: the var
-    - a lambda abstractions: the set of free variables of the body minus the singleton of       the binder
-    - a      lambda applications: the union of the sets of free variables of the two parts of the a   pplications *)
+    - a lambda variables:         the singleton of the var itelf
+    - a lambda abstractions:      the set of free variables of the body minus 
+                                  the singleton of the binder
+    - a lambda applications:      the union of the sets of free variables of 
+                                  the two parts of the applications *)
 Fixpoint free_var (t : term) : var_set :=
   match t with
   | (var x) => x :: nil
   | (app t1 t2) => union_var_set (free_var t1) (free_var t2)
   | (abs x t') => remove_var_set x (free_var t')
   end.
+
+(** Some notation for set operations *)
+Notation "s + x" := (add_var_set x s)
+                       (at level 50, left associativity).
+Notation "s - x" := (remove_var_set x s)
+                      (at level 50, left associativity).
+Notation "x E= s" := (in_var_set x s)
+                       (at level 50, left associativity).
+Notation "s1 +U+ s2" := (union_var_set s1 s2)
+                          (at level 50, left associativity).
+Notation "s1 +I+ s2" := (inter_var_set s1 s2)
+                          (at level 50, left associativity).
+Notation "s1 \ s2" := (minus_var_set s1 s2)
+                        (at level 50, left associativity).
+
 
 Example freevar1 : forall x: A, free_var (var x) = x :: nil.
 intro x. reflexivity. Qed.
