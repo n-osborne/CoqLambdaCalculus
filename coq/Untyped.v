@@ -136,23 +136,22 @@ intro x. reflexivity. Qed.
 
 
  *)
-Fixpoint substitution (x: A) (a: A) (t: term) : term :=
+Fixpoint substitution (x: A) (n: term) (t: term) : term :=
   match t with
   | (var y) =>
     match A_eq_dec x y with
-    | left _ => var a (* x = y *)
-    | right _ => var y (* x <> y *)
+    | left _ => n (* x = y *)
+    | right _ => t (* x <> y *)
     end
   | (abs y t') =>
     match A_eq_dec x y with (* check whether x is free in t' *)
     | left _ => abs y t' (* x = y, ie x is not free in t' *)
     | right _ => (* x <> y, ie is free in t' *)
-      match A_eq_dec a y with (* check whether there will be a name clash *)
-      | left _ => abs y (substitution x a t')  (* a = y, ie no name clash *)
-      | right _ =>  (* a <> y, ie name clash *)
-      end
+      if (in_var_set y (free_var n)) (* name clash *)
+      then (* TODO *)
+      else abs y (substitution x n t')
     end
-  | (app t1 t2) => app (substitution x a t1) (substitution x a t2)
+  | (app t1 t2) => app (substitution x n t1) (substitution x n t2)
   end.
                                              
 (** Predicate to determine whether a term is a redex.
