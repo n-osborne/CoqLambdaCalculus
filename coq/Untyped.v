@@ -125,7 +125,37 @@ intro x. reflexivity. Qed.
     In order to solve the name clash problem, there are two possibilities:
     1. rename the variable which is the source of the name clash
     2. implement the de Bruijn algorithm
+ *)
 
+(**
+   **Definition of the renaming**
+   x{y/x}       === y
+   z{y/x}       === z if x <> z
+   (MN){y/x}    === (M{y/x})(N{y/x})
+   (\x.M){y/x}  === (\y.(M{y/x}))
+   (\z.M){y/x}  === (\z.(M{y/x})) if x <> z
+   
+ *)
+(** Replace all occurrences of x by y in t ie t{y/x} *)
+Fixpoint renaming (t: term) (x: A) (y: A) : term :=
+  match t with
+  | (var z) =>
+    match A_eq_dec z x with
+    | left _ => var y (* z == x *)
+    | right _ => t (* z <> x *)
+    end
+  | (abs z t') =>
+    match A_eq_dec x z with
+    | left _ => abs y (renaming t' x y) (* z == x *)
+    | right _ => abs z (renaming t' x y) (* z <> x *)
+    end
+  | (app t1 t2) => app (renaming t1 x y) (renaming t2 x y)
+  end.
+
+Notation "t { y / x }" := (renaming t x y)
+                       (at level 50, left associativity).
+
+(**
     **Definition of the substitution with renaming**
     x[N/x]       === N
     y[N/x]       === y, if x <> y
@@ -148,7 +178,7 @@ Fixpoint substitution (x: A) (n: term) (t: term) : term :=
     | left _ => abs y t' (* x = y, ie x is not free in t' *)
     | right _ => (* x <> y, ie is free in t' *)
       if (in_var_set y (free_var n)) (* name clash *)
-      then (* TODO *)
+      then (* TODO: rename binder in t with a fresh variable *)
       else abs y (substitution x n t')
     end
   | (app t1 t2) => app (substitution x n t1) (substitution x n t2)
