@@ -1,104 +1,130 @@
-Require Export LVar.
+Require Import List.
 
-    (** *Type declaration for the sets of variable.*
-      Variables are strings, mainly in order to have an infinite
-      set of available variables according to the definition of
-      the syntax of lambda calculus. *)
-  Inductive varset : Type := 
-  | nil : varset
-  | cons : lvar -> varset -> varset.
 
-  Notation "x :: l" := (cons x l)
-                         (at level 60, right associativity).
-  Notation "[ ]" := nil.
-  Notation "[ x ; .. ; y ]" := (cons x .. (cons y nil) ..).
+(** We need a type for the lambda variables.
+    This type should be infinite and the equality should be decidable.
+    We make the decidability of the equality an hypothesis.
+    The other possibility would have been to create an infinite ad hoc
+    type with a decidable equality. This second option would have 
+    necessitate type constructors and a proof of the decidability of the
+    equality.
+*)
+Variable A : Type.
 
-  Fixpoint addvar  (el : lvar) (s : varset) : varset :=
-    match s with
-    | nil => el :: nil
-    | h::t => if lvar_beq h el then t else h::(addvar el t)
-    end.
+Hypothesis A_eq_dec: forall x y: A, {x = y} + {x <> y}.
 
-  Fixpoint union (s1: varset) (s2: varset) : varset :=
-    match s2 with
-    | nil => s1
-    | h::t => union (h::s1) t
-    end.
 
-  Notation "s1 ++ s2" := (union s1 s2).
-  
-  Fixpoint invarset (el: lvar) (s: varset) : bool :=
-    match s with
-    | nil => false
-    | h::t => if lvar_beq el h then true else invarset el t
-    end.
+(** **Type declaration** *)
+(** An untyped lambda term is either:
+    - a variable from a given Set
+    - the abstraction of a variable from a Term
+    - the application of a Term to another one.
+ *)
+Inductive term : Type :=
+| var : A -> term
+| abs : A -> term -> term
+| app : term -> term -> term.
 
-  Fixpoint removevar (el: lvar) (s: varset) : varset :=
-    match s with
-    | nil => nil
-    | h::t => if lvar_beq el h then t else h::(removevar el t)
-    end.
+(** **Some functions about terms** *)
 
-  Notation "x \ s" := (removevar x s)
-                        (at level 60, right associativity).
+(**
+We will need a type for the set of variables. There are two sort of possibilities
+here:
+1. Implement a lightweight type of my own.
+2. Use a type from the Coq standard library (e.g. ListSet)
+*)
 
-  
-  (** *Type declaration*
-      An untyped lambda term is either:
-      - a variable from a given Set
-      - the abstraction of a variable from a Term
-      - the application of a Term to another one.
-   *)
-  Inductive term : Type :=
-  | var : lvar -> term
-  | abs : lvar -> term -> term
-  | app : term -> term -> term.
+(** My own declaration and lightweight implementation of var_set *)
+Definition var_set := list A.
 
-  (** *Some functions about terms* *)
+Definition empty_var_set : var_set := nil.
 
-  (** Function to get all the variables of a lambda expression *)
-  Fixpoint getvarset (t: term) : varset :=
-      match t with
-      | (var x) => x :: nil
-      | (app t1 t2) => (getvarset t1) ++ (getvarset t2)
-      | (abs x t') => getvarset t'
-      end.
+Fixpoint add_var_set (a:A) (s:var_set) : var_set :=
+  match s with
+  | nil => a::nil
+  | h::t =>
+    match A_eq_dec a h with
+    | left _ => h::t
+    | right _ => h::add_var_set a t
+    end
+  end.
 
-  (** Function to get all the free variables of a lambda expression
-      The set of the free variables for
-      - a lambda variables: the var
-      - a lambda abstractions: the set of free variables of the body minus the singleton of the binder
-      - a lambda applications: the union of the sets of free variables of the two parts of the applications *)
-  Fixpoint freevar (t : term) : varset :=
-    match t with
-    | (var x) => x :: nil
-    | (app t1 t2) => (freevar t1) ++ (freevar t2)
-    | (abs x t') => x \ (freevar t')
-    end.
+Fixpoint remove_var_set (a:A) (s:var_set) : var_set :=
+  match s with
+  | nil => nil
+  | h::t =>
+    match A_eq_dec a h with
+    | left _ => t
+    | right _ => remove_var_set a t
+    end
+  end.
 
-  Example freevar1 : forall x: lvar, freevar (var x) = [x].
-  intro x. reflexivity. Qed.
+Fixpoint in_var_set (a:A) (s:var_set) : bool :=
+  match s with
+  | nil => false
+  | h::t =>
+    match A_eq_dec a h with
+    | left _ => true
+    | right _ => in_var_set a t
+    end
+  end.
 
-  Example freevar2 : forall x y : lvar, freevar (app (var x) (var y)) = x::y::nil
-  \/ freevar (app (var x) (var y)) = y::x::nil.
-  Proof. intros. simpl. right. reflexivity. Qed.
+Fixpoint union_var_set (s1:var_set) (s2:var_set) : var_set :=
+  match s1 with
+  | nil => s2
+  | h::t => add_var_set h (union_var_set t s2)
+  end.
 
-  Example freevar3 : forall x y : lvar, x <> y -> freevar (abs x (var y)) = [y].
-  Proof. intros. unfold not in H. simpl. destruct (lvar_beq x y).
-         -  admit.
-         - reflexivity.
-  Admitted.
-  
-  (** Predicate to determine whether a term is a redex.
-      All the work is done when the argument is an application *)
-  Fixpoint isredex (t: term) : bool :=
-    match t with
-    | (var x) => false
-    | (abs x b) => isredex b
-    | (app t1 t2) => match t1 with
-                     | (var x') => isredex t2
-                     | (app t1 t2) => orb (isredex t1) (isredex t2)
-                     | (abs x' b') => orb (invarset x' (freevar b')) (isredex t2)
-                    end
-    end.
+Fixpoint inter_var_set (s1 s2: var_set) : var_set :=
+  match s1 with
+  | nil => nil
+  | h::t => if in_var_set h s2
+           then add_var_set h (inter_var_set t s2)
+           else inter_var_set t s2
+  end.
+
+Fixpoint minus_var_set (s1 s2: var_set) : var_set :=
+  match s2 with
+  | nil => s1
+  | h::t => if in_var_set h s1
+           then minus_var_set (remove_var_set h s1) t
+           else minus_var_set s1 t
+  end.
+
+Fixpoint get_var_set (t: term) : var_set :=
+  match t with
+  | (var x) => add_var_set x nil
+  | (app t1 t2) => union_var_set (get_var_set t1) (get_var_set t2)
+  | (abs x t') => get_var_set t'
+  end.
+
+(** Function to get all the free variables of a lambda expression
+    The set of the free variables for
+    - a lambda variables: the var
+    - a lambda abstractions: the set of free variables of the body minus the singleton of       the binder
+    - a      lambda applications: the union of the sets of free variables of the two parts of the a   pplications *)
+Fixpoint free_var (t : term) : var_set :=
+  match t with
+  | (var x) => x :: nil
+  | (app t1 t2) => union_var_set (free_var t1) (free_var t2)
+  | (abs x t') => remove_var_set x (free_var t')
+  end.
+
+Example freevar1 : forall x: A, free_var (var x) = x :: nil.
+intro x. reflexivity. Qed.
+
+
+
+(** Predicate to determine whether a term is a redex.
+    All the work is done when the argument is an application *)
+Fixpoint isredex (t: term) : bool :=
+  match t with
+  | (var x) => false
+  | (abs x b) => isredex b
+  | (app t1 t2) => match t1 with
+                  | (var x') => isredex t2
+                  | (app t1 t2) => orb (isredex t1) (isredex t2)
+                  | (abs x' b') => orb (invarset x' (freevar b')) (isredex t2)
+                  end
+  end.
 
