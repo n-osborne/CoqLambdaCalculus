@@ -115,16 +115,57 @@ intro x. reflexivity. Qed.
 
 
 
+(** Beta-reduction implementation section *)
+
+(** Beta-reduction is the fundamental operation for lambda-calculus. *)
+(** On order to implement the beta-reduction on untyped lambda calculus
+    we need first to implement a substitution function.
+
+    The main problem is name clashes.
+    In order to solve the name clash problem, there are two possibilities:
+    1. rename the variable which is the source of the name clash
+    2. implement the de Bruijn algorithm
+
+    **Definition of the substitution with renaming**
+    x[N/x]       === N
+    y[N/x]       === y, if x <> y
+    (MP)[N/x]    === (M[N/x])(P[N/x])
+    (\x.M)[N/x]  === \x.M
+    (\y.M)[N/x]  === \y.(M[N/x]), if x <> y and y not in FV(N)
+    (\y.M)[N/x]  === \y'.(M{y'/y}[N/x]), if x <> y, y in FV(N) and y' fresh
+
+
+ *)
+Fixpoint substitution (x: A) (a: A) (t: term) : term :=
+  match t with
+  | (var y) =>
+    match A_eq_dec x y with
+    | left _ => var a (* x = y *)
+    | right _ => var y (* x <> y *)
+    end
+  | (abs y t') =>
+    match A_eq_dec x y with (* check whether x is free in t' *)
+    | left _ => abs y t' (* x = y, ie x is not free in t' *)
+    | right _ => (* x <> y, ie is free in t' *)
+      match A_eq_dec a y with (* check whether there will be a name clash *)
+      | left _ => abs y (substitution x a t')  (* a = y, ie no name clash *)
+      | right _ =>  (* a <> y, ie name clash *)
+      end
+    end
+  | (app t1 t2) => app (substitution x a t1) (substitution x a t2)
+  end.
+                                             
 (** Predicate to determine whether a term is a redex.
     All the work is done when the argument is an application *)
 Fixpoint isredex (t: term) : bool :=
   match t with
   | (var x) => false
   | (abs x b) => isredex b
-  | (app t1 t2) => match t1 with
-                  | (var x') => isredex t2
-                  | (app t1 t2) => orb (isredex t1) (isredex t2)
-                  | (abs x' b') => orb (invarset x' (freevar b')) (isredex t2)
-                  end
+  | (app t1 t2) =>
+    match t1 with
+    | (var x') => isredex t2
+    | (app t1 t2) => orb (isredex t1) (isredex t2)
+    | (abs x' b') => orb (invarset x' (freevar b')) (isredex t2)
+    end
   end.
 
