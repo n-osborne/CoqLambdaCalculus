@@ -116,8 +116,14 @@ Proof.
     + simpl; right; apply IHs.
 Qed.
 
-
-
+(** no element are in the empty_var_set.
+    The proof is exactly the same as the one for List,
+    which is no surprise as the empty_var_set is an empty List.
+*)
+Theorem in_nil : forall (a:A), ~ var_set_In a empty_var_set.
+Proof.
+  intros a; unfold not; intro contra; inversion contra.
+Qed.
 
       
   
