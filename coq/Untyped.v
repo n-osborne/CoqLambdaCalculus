@@ -91,6 +91,37 @@ Fixpoint minus_var_set (s1 s2: var_set) : var_set :=
            else minus_var_set s1 t
   end.
 
+(** The ListSet library defines a Predicate set_In 
+ This definition relies on the In Predicate for the Lists:
+ 
+ Fixpoint In (a:A) (l:list A) : Prop:=
+   match l with
+     | [] => False
+     | b :: m => b = a \/ In a m
+   end.
+
+ *)
+Definition var_set_In : A -> var_set -> Prop := In (A:=A).
+
+(** an element is in the var_set it was just add to.
+    The proof is more complicated than for simple lists
+    as there is an equality test in the add_var_set function.
+*)
+Theorem in_eq : forall (a:A) (s:var_set), var_set_In a (add_var_set a s).
+Proof.
+  intros a s. unfold var_set_In. induction s.
+  - simpl; left; reflexivity.
+  - simpl. destruct (A_eq_dec a a0).
+    + rewrite e; simpl; left; reflexivity.
+    + simpl; right; apply IHs.
+Qed.
+
+
+
+
+      
+  
+(** Function concerning term and var_set *)
 Fixpoint get_var_set (t: term) : var_set :=
   match t with
   | (var x) => add_var_set x nil
@@ -129,6 +160,7 @@ Notation "s1 \ s2" := (minus_var_set s1 s2)
 
 Example freevar1 : forall x: A, free_var (var x) = x :: nil.
 intro x. reflexivity. Qed.
+
 
 
 
